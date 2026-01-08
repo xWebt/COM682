@@ -212,9 +212,21 @@
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({journalId: journalId})
                     });
+                    
+                    // 检查响应状态
                     if (res.ok) {
-                        const journal = await res.json();
-                        journals.push(journal);
+                        const contentType = res.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const journal = await res.json();
+                            journals.push(journal);
+                        } else {
+                            // 如果返回的不是 JSON，尝试解析文本
+                            const text = await res.text();
+                            console.warn('GET 返回非 JSON 格式:', text);
+                        }
+                    } else {
+                        // 请求失败，但不阻止其他请求
+                        console.warn('获取日记失败:', journalId, res.status, res.statusText);
                     }
                 } catch (error) {
                     console.error('获取日记错误:', journalId, error);
