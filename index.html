@@ -209,10 +209,8 @@
                 try {
                     // 清理 journalId：移除换行符和其他特殊字符
                     const cleanJournalId = journalId.replace(/\n/g, '').replace(/\r/g, '').trim();
-                    const res = await fetch(GET_URL, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({journalId: cleanJournalId})
+                    const res = await fetch(GET_URL + '&journalId=' + encodeURIComponent(cleanJournalId), {
+                        method: 'GET'
                     });
                     
                     // 检查响应状态
@@ -332,10 +330,8 @@
             try {
                 // 清理 journalId：移除换行符和其他特殊字符
                 const cleanId = id.replace(/\n/g, '').replace(/\r/g, '').trim();
-                const res = await fetch(DELETE_URL, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({journalId: cleanId})
+                const res = await fetch(DELETE_URL + '&journalId=' + encodeURIComponent(cleanId), {
+                    method: 'GET'
                 });
                 
                 if (res.ok) {
