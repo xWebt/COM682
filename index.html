@@ -330,9 +330,14 @@
             try {
                 // 清理 journalId：移除换行符和其他特殊字符
                 const cleanId = id.replace(/\n/g, '').replace(/\r/g, '').trim();
-                const res = await fetch(DELETE_URL + '&journalId=' + encodeURIComponent(cleanId), {
-                    method: 'GET'
+                const url = DELETE_URL + '&journalId=' + encodeURIComponent(cleanId);
+                console.log('DELETE URL:', url); // 调试日志
+                
+                const res = await fetch(url, {
+                    method: 'DELETE'
                 });
+                
+                console.log('DELETE response status:', res.status); // 调试日志
                 
                 if (res.ok) {
                     // 从本地存储中移除journalId
@@ -341,9 +346,12 @@
                     alert('删除成功！');
                     loadJournals();
                 } else {
-                    alert('删除失败');
+                    const errorText = await res.text();
+                    console.error('DELETE failed:', res.status, errorText);
+                    alert('删除失败: ' + res.status + ' ' + res.statusText);
                 }
             } catch (error) {
+                console.error('DELETE error:', error);
                 alert('删除失败: ' + error.message);
             }
         }
