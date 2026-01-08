@@ -179,40 +179,51 @@
     </div>
     
     <script>
-        const API_BASE_URL = 'https://YOUR_FUNCTION_APP_NAME.azurewebsites.net/api';
+        // Logic App URLs
+        const CREATE_URL = 'https://prod-19.eastasia.logic.azure.com:443/workflows/a409e01a017d46d6981581c3f9aa1bcc/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=AErlxxbQS9_Eae2MUwFEPzxULIgaxWzkbB-QA6kM0aU';
         
-        // 加载日记列表
+        const GET_URL = 'https://prod-04.eastasia.logic.azure.com:443/workflows/e8c99b5a72684c8a841b7044cb1fa03e/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=Q6IwF_hvBFbNqntqGbmOZpr4-97jOyn8vs19kLVvg8Q';
+        
+        const UPDATE_URL = 'https://prod-02.eastasia.logic.azure.com:443/workflows/ffa66920f66246749701b2801e85af4d/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=dLR4Q4IFJeuhgzeEdYc99Ai2SzlGGHUSWQCJb9qx8Hg';
+        
+        const DELETE_URL = 'https://prod-00.eastasia.logic.azure.com:443/workflows/6d9e4c2a34024b1396b2fc55aa834bc9/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=Ke4yfbSb55tKahY__ZHp2HyYH6IZCcYZEdz5oQ1fnu8';
+        
+        // 简化方案：由于Logic App限制，暂时使用本地存储或简化功能
+        // 存储已创建的日记ID列表（临时方案）
+        let journalIds = JSON.parse(localStorage.getItem('journalIds') || '[]');
+        
+        // 加载日记列表（简化版：由于Logic App只能获取单个实体，这里显示提示）
         async function loadJournals() {
             const list = document.getElementById('journalsList');
-            list.innerHTML = '<p class="loading">加载中...</p>';
             
-            try {
-                const res = await fetch(API_BASE_URL + '/getJournals');
-                if (!res.ok) throw new Error('获取失败');
-                
-                const journals = await res.json();
-                
-                if (journals.length === 0) {
-                    list.innerHTML = '<p class="empty">还没有日记，创建第一个吧！</p>';
-                    return;
+            if (journalIds.length === 0) {
+                list.innerHTML = '<p class="empty">还没有日记，创建第一个吧！<br><small>提示：使用创建功能添加日记后，可以通过journalId查看单个日记</small></p>';
+                return;
+            }
+            
+            list.innerHTML = '<p class="loading">正在加载日记...<br><small>提示：由于Logic App限制，请使用journalId通过GET功能查看单个日记</small></p>';
+            
+            // 可选：尝试获取第一个日记作为示例
+            if (journalIds.length > 0) {
+                try {
+                    const res = await fetch(GET_URL + '&journalId=' + encodeURIComponent(journalIds[0]));
+                    if (res.ok) {
+                        const journal = await res.json();
+                        const date = new Date(journal.Timestamp || journal.RowKey).toLocaleString('zh-CN');
+                        list.innerHTML = `
+                            <div class="journal-card">
+                                <img src="${journal.ImageUrl || ''}" alt="${journal.Title}" onerror="this.style.display='none'">
+                                <h3>${escapeHtml(journal.Title)}</h3>
+                                <p>${escapeHtml(journal.Text)}</p>
+                                <p><small>${date}</small></p>
+                                <button class="btn-small btn-delete" onclick="deleteJournal('${journal.RowKey}')">删除</button>
+                            </div>
+                            <p class="empty" style="margin-top:20px;">共有 ${journalIds.length} 篇日记，使用GET功能可以查看其他日记</p>
+                        `;
+                    }
+                } catch (error) {
+                    list.innerHTML = '<p class="empty">已创建日记，使用GET功能可以查看单个日记</p>';
                 }
-                
-                list.innerHTML = journals.map(j => {
-                    const date = new Date(j.Timestamp || j.RowKey).toLocaleString('zh-CN');
-                    const title = escapeHtml(j.Title);
-                    const text = escapeHtml(j.Text);
-                    return `
-                        <div class="journal-card">
-                            <img src="${j.ImageUrl}" alt="${title}" onerror="this.style.display='none'">
-                            <h3>${title}</h3>
-                            <p>${text}</p>
-                            <p><small>${date}</small></p>
-                            <button class="btn-small btn-delete" onclick="deleteJournal('${j.RowKey}')">删除</button>
-                        </div>
-                    `;
-                }).join('');
-            } catch (error) {
-                list.innerHTML = '<p class="error">加载失败: ' + error.message + '</p>';
             }
         }
         
@@ -223,24 +234,19 @@
             return div.innerHTML;
         }
         
-        // 上传图片
+        // 简化方案：图片上传（由于没有Function App，使用base64直接存储或使用外部图片URL）
         async function uploadImage(file) {
+            // 方案1：直接使用base64（简单但不推荐，数据会很大）
             const base64 = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
+            return base64; // 直接返回base64，Logic App可以存储
             
-            const res = await fetch(API_BASE_URL + '/uploadImage', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({image: base64})
-            });
-            
-            if (!res.ok) throw new Error('图片上传失败');
-            const data = await res.json();
-            return data.imageUrl;
+            // 方案2：如果不想上传图片，可以使用占位图片
+            // return 'https://via.placeholder.com/400x300?text=Travel+Image';
         }
         
         // 创建日记
@@ -257,13 +263,19 @@
             
             try {
                 const imageUrl = await uploadImage(imageFile);
-                const res = await fetch(API_BASE_URL + '/createJournal', {
+                const res = await fetch(CREATE_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({title, text, imageUrl})
                 });
                 
                 if (res.ok) {
+                    const result = await res.json();
+                    const journalId = result.journalId || result.body?.journalId;
+                    if (journalId) {
+                        journalIds.push(journalId);
+                        localStorage.setItem('journalIds', JSON.stringify(journalIds));
+                    }
                     alert('创建成功！');
                     document.getElementById('journalForm').reset();
                     loadJournals();
@@ -284,11 +296,14 @@
             if (!confirm('确定要删除这篇日记吗？')) return;
             
             try {
-                const res = await fetch(API_BASE_URL + '/deleteJournal?journalId=' + id, {
+                const res = await fetch(DELETE_URL + '&journalId=' + encodeURIComponent(id), {
                     method: 'DELETE'
                 });
                 
                 if (res.ok) {
+                    // 从本地存储中移除journalId
+                    journalIds = journalIds.filter(jId => jId !== id);
+                    localStorage.setItem('journalIds', JSON.stringify(journalIds));
                     alert('删除成功！');
                     loadJournals();
                 } else {
