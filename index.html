@@ -207,10 +207,8 @@
             const journals = [];
             for (const journalId of journalIds) {
                 try {
-                    const res = await fetch(GET_URL, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({journalId: journalId})
+                    const res = await fetch(GET_URL + '&journalId=' + encodeURIComponent(journalId), {
+                        method: 'GET'
                     });
                     
                     // 检查响应状态
@@ -235,7 +233,7 @@
             
             // 显示所有日记
             if (journals.length === 0) {
-                list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记，但无法加载。请检查 Logic App 是否正常运行。</p>`;
+                list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记，但 GET Logic App 暂时无法加载日记。<br><small>您可以先使用创建功能添加新日记。GET 功能需要检查 Logic App 配置。</small></p>`;
                 return;
             }
             
@@ -328,11 +326,9 @@
             if (!confirm('确定要删除这篇日记吗？')) return;
             
             try {
-                // Logic App 的 HTTP 触发器需要使用 POST 请求，参数在请求体中
-                const res = await fetch(DELETE_URL, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({journalId: id})
+                // Logic App 使用 GET 请求，参数在 URL 查询字符串中
+                const res = await fetch(DELETE_URL + '&journalId=' + encodeURIComponent(id), {
+                    method: 'GET'
                 });
                 
                 if (res.ok) {
