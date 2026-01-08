@@ -192,48 +192,60 @@
         // 存储已创建的日记ID列表（临时方案）
         let journalIds = JSON.parse(localStorage.getItem('journalIds') || '[]');
         
-        // 加载日记列表（简化版：由于Logic App只能获取单个实体，这里显示提示）
+        // 加载日记列表
         async function loadJournals() {
             const list = document.getElementById('journalsList');
             
             if (journalIds.length === 0) {
-                list.innerHTML = '<p class="empty">还没有日记，创建第一个吧！<br><small>提示：使用创建功能添加日记后，可以通过journalId查看单个日记</small></p>';
+                list.innerHTML = '<p class="empty">还没有日记，创建第一个吧！</p>';
                 return;
             }
             
-            list.innerHTML = '<p class="loading">正在加载日记...<br><small>提示：由于Logic App限制，请使用journalId通过GET功能查看单个日记</small></p>';
+            list.innerHTML = '<p class="loading">正在加载日记...</p>';
             
-            // 可选：尝试获取第一个日记作为示例
-            if (journalIds.length > 0) {
+            // 遍历所有 journalIds，获取每个日记
+            const journals = [];
+            for (const journalId of journalIds) {
                 try {
-                    // Logic App 的 HTTP 触发器需要使用 POST 请求，参数在请求体中
                     const res = await fetch(GET_URL, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({journalId: journalIds[0]})
+                        body: JSON.stringify({journalId: journalId})
                     });
                     if (res.ok) {
                         const journal = await res.json();
-                        const date = new Date(journal.Timestamp || journal.RowKey).toLocaleString('zh-CN');
-                        list.innerHTML = `
-                            <div class="journal-card">
-                                <img src="${journal.ImageUrl || ''}" alt="${journal.Title}" onerror="this.style.display='none'">
-                                <h3>${escapeHtml(journal.Title)}</h3>
-                                <p>${escapeHtml(journal.Text)}</p>
-                                <p><small>${date}</small></p>
-                                <button class="btn-small btn-delete" onclick="deleteJournal('${journal.RowKey}')">删除</button>
-                            </div>
-                            <p class="empty" style="margin-top:20px;">共有 ${journalIds.length} 篇日记，使用GET功能可以查看其他日记</p>
-                        `;
-                    } else {
-                        // 如果请求失败，显示提示信息
-                        list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记。使用 GET 功能可以查看单个日记。</p>`;
+                        journals.push(journal);
                     }
                 } catch (error) {
-                    console.error('加载日记错误:', error);
-                    list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记。使用 GET 功能可以查看单个日记。</p>`;
+                    console.error('获取日记错误:', journalId, error);
                 }
             }
+            
+            // 显示所有日记
+            if (journals.length === 0) {
+                list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记，但无法加载。请检查 Logic App 是否正常运行。</p>`;
+                return;
+            }
+            
+            // 按时间倒序排列（最新的在前）
+            journals.sort((a, b) => {
+                const timeA = new Date(a.Timestamp || a.RowKey).getTime();
+                const timeB = new Date(b.Timestamp || b.RowKey).getTime();
+                return timeB - timeA;
+            });
+            
+            list.innerHTML = journals.map(journal => {
+                const date = new Date(journal.Timestamp || journal.RowKey).toLocaleString('zh-CN');
+                return `
+                    <div class="journal-card">
+                        <img src="${journal.ImageUrl || ''}" alt="${escapeHtml(journal.Title)}" onerror="this.style.display='none'">
+                        <h3>${escapeHtml(journal.Title)}</h3>
+                        <p>${escapeHtml(journal.Text)}</p>
+                        <p><small>${date}</small></p>
+                        <button class="btn-small btn-delete" onclick="deleteJournal('${journal.RowKey}')">删除</button>
+                    </div>
+                `;
+            }).join('');
         }
         
         // HTML转义
