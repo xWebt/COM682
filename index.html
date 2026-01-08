@@ -206,7 +206,12 @@
             // 可选：尝试获取第一个日记作为示例
             if (journalIds.length > 0) {
                 try {
-                    const res = await fetch(GET_URL + '&journalId=' + encodeURIComponent(journalIds[0]));
+                    // Logic App 的 HTTP 触发器需要使用 POST 请求，参数在请求体中
+                    const res = await fetch(GET_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({journalId: journalIds[0]})
+                    });
                     if (res.ok) {
                         const journal = await res.json();
                         const date = new Date(journal.Timestamp || journal.RowKey).toLocaleString('zh-CN');
@@ -220,9 +225,13 @@
                             </div>
                             <p class="empty" style="margin-top:20px;">共有 ${journalIds.length} 篇日记，使用GET功能可以查看其他日记</p>
                         `;
+                    } else {
+                        // 如果请求失败，显示提示信息
+                        list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记。使用 GET 功能可以查看单个日记。</p>`;
                     }
                 } catch (error) {
-                    list.innerHTML = '<p class="empty">已创建日记，使用GET功能可以查看单个日记</p>';
+                    console.error('加载日记错误:', error);
+                    list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记。使用 GET 功能可以查看单个日记。</p>`;
                 }
             }
         }
