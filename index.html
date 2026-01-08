@@ -209,10 +209,10 @@
                 try {
                     // 清理 journalId：移除换行符和其他特殊字符
                     const cleanJournalId = journalId.replace(/\n/g, '').replace(/\r/g, '').trim();
-                    const url = GET_URL + '&journalId=' + encodeURIComponent(cleanJournalId);
-                    console.log('GET URL:', url.substring(0, 100) + '...'); // 调试日志
-                    const res = await fetch(url, {
-                        method: 'GET'
+                    const res = await fetch(GET_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({journalId: cleanJournalId})
                     });
                     
                     // 检查响应状态
@@ -330,9 +330,12 @@
             if (!confirm('确定要删除这篇日记吗？')) return;
             
             try {
-                // Logic App 使用 GET 请求，参数在 URL 查询字符串中
-                const res = await fetch(DELETE_URL + '&journalId=' + encodeURIComponent(id), {
-                    method: 'GET'
+                // 清理 journalId：移除换行符和其他特殊字符
+                const cleanId = id.replace(/\n/g, '').replace(/\r/g, '').trim();
+                const res = await fetch(DELETE_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({journalId: cleanId})
                 });
                 
                 if (res.ok) {
