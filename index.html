@@ -140,6 +140,59 @@
             background: #c82333;
         }
         
+        .btn-edit {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #0056b3;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        
+        .close-modal:hover {
+            color: #000;
+        }
+        
         .loading, .error, .empty {
             text-align: center;
             padding: 20px;
@@ -254,6 +307,7 @@
                         <h3>${escapeHtml(journal.Title)}</h3>
                         <p>${escapeHtml(journal.Text)}</p>
                         <p><small>${date}</small></p>
+                        <button class="btn-small btn-edit" onclick="editJournal('${journal.RowKey}')">编辑</button>
                         <button class="btn-small btn-delete" onclick="deleteJournal('${journal.RowKey}')">删除</button>
                     </div>
                 `;
@@ -322,6 +376,141 @@
                 submitBtn.textContent = '创建日记';
             }
         });
+        
+        // 编辑日记
+        async function editJournal(id) {
+            try {
+                // 先获取日记数据
+                const cleanId = id.replace(/\n/g, '').replace(/\r/g, '').trim();
+                const res = await fetch(GET_URL + '&journalId=' + encodeURIComponent(cleanId), {
+                    method: 'GET'
+                });
+                
+                if (!res.ok) {
+                    alert('获取日记失败');
+                    return;
+                }
+                
+                const journal = await res.json();
+                showEditModal(journal);
+            } catch (error) {
+                console.error('获取日记错误:', error);
+                alert('获取日记失败: ' + error.message);
+            }
+        }
+        
+        // 显示编辑模态框
+        function showEditModal(journal) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'editModal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close-modal" onclick="closeEditModal()">&times;</span>
+                    <h2>编辑日记</h2>
+                    <form id="editForm">
+                        <div class="form-group">
+                            <label for="editTitle">标题</label>
+                            <input type="text" id="editTitle" required value="${escapeHtml(journal.Title)}">
+                        </div>
+                        <div class="form-group">
+                            <label for="editText">内容</label>
+                            <textarea id="editText" required>${escapeHtml(journal.Text)}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editImage">图片（可选）</label>
+                            <input type="file" id="editImage" accept="image/*">
+                            <div id="editImagePreview" style="margin-top: 10px;">
+                                ${journal.ImageUrl ? `<img src="${journal.ImageUrl}" style="max-width: 200px; height: auto;">` : ''}
+                            </div>
+                        </div>
+                        <input type="hidden" id="editJournalId" value="${journal.RowKey}">
+                        <button type="submit">保存更改</button>
+                        <button type="button" onclick="closeEditModal()" style="margin-left: 10px;">取消</button>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // 绑定表单提交
+            document.getElementById('editForm').addEventListener('submit', handleEditSubmit);
+            
+            // 图片预览
+            document.getElementById('editImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('editImagePreview').innerHTML = `<img src="${event.target.result}" style="max-width: 200px; height: auto;">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 点击背景关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeEditModal();
+                }
+            });
+        }
+        
+        // 关闭编辑模态框
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // 处理编辑表单提交
+        async function handleEditSubmit(e) {
+            e.preventDefault();
+            
+            const journalId = document.getElementById('editJournalId').value;
+            const title = document.getElementById('editTitle').value;
+            const text = document.getElementById('editText').value;
+            const imageFile = document.getElementById('editImage').files[0];
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '保存中...';
+            
+            try {
+                // 暂时不使用实际图片，使用占位符（或保留原有图片URL）
+                const imageUrl = imageFile ? await uploadImage(imageFile) : (document.querySelector('#editImagePreview img')?.src || 'https://via.placeholder.com/400x300?text=No+Image');
+                
+                // 清理 journalId
+                const cleanId = journalId.replace(/\n/g, '').replace(/\r/g, '').trim();
+                
+                const res = await fetch(UPDATE_URL, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        journalId: cleanId,
+                        title: title,
+                        text: text,
+                        imageUrl: imageUrl
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('更新成功！');
+                    closeEditModal();
+                    loadJournals();
+                } else {
+                    const error = await res.text();
+                    alert('更新失败: ' + error);
+                }
+            } catch (error) {
+                console.error('更新错误:', error);
+                alert('更新失败: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '保存更改';
+            }
+        }
         
         // 删除日记
         async function deleteJournal(id) {
