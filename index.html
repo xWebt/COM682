@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅行日记平台</title>
+    <title>Travel Journal Platform</title>
     <style>
         * {
             margin: 0;
@@ -205,30 +205,30 @@
     </style>
 </head>
 <body>
-    <h1>✈️ 旅行日记平台</h1>
+    <h1>✈️ Travel Journal Platform</h1>
     
     <div class="form-section">
-        <h2>创建新日记</h2>
+        <h2>Create New Journal</h2>
         <form id="journalForm">
             <div class="form-group">
-                <label for="title">标题</label>
-                <input type="text" id="title" required placeholder="输入日记标题">
+                <label for="title">Title</label>
+                <input type="text" id="title" required placeholder="Enter journal title">
             </div>
             <div class="form-group">
-                <label for="text">内容</label>
-                <textarea id="text" required placeholder="描述您的旅行经历..."></textarea>
+                <label for="text">Content</label>
+                <textarea id="text" required placeholder="Describe your travel experience..."></textarea>
             </div>
             <div class="form-group">
-                <label for="image">图片（可选）</label>
+                <label for="image">Image (Optional)</label>
                 <input type="file" id="image" accept="image/*">
             </div>
-            <button type="submit">创建日记</button>
+            <button type="submit">Create Journal</button>
         </form>
     </div>
     
     <div class="journals-section">
-        <h2>最近的旅行</h2>
-        <div id="journalsList">加载中...</div>
+        <h2>Recent Travels</h2>
+        <div id="journalsList">Loading...</div>
     </div>
     
     <script>
@@ -250,11 +250,11 @@
             const list = document.getElementById('journalsList');
             
             if (journalIds.length === 0) {
-                list.innerHTML = '<p class="empty">还没有日记，创建第一个吧！</p>';
+                list.innerHTML = '<p class="empty">No journals yet. Create your first one!</p>';
                 return;
             }
             
-            list.innerHTML = '<p class="loading">正在加载日记...</p>';
+            list.innerHTML = '<p class="loading">Loading journals...</p>';
             
             // 遍历所有 journalIds，获取每个日记
             const journals = [];
@@ -288,7 +288,7 @@
             
             // 显示所有日记
             if (journals.length === 0) {
-                list.innerHTML = `<p class="empty">已创建 ${journalIds.length} 篇日记，但 GET Logic App 暂时无法加载日记。<br><small>您可以先使用创建功能添加新日记。GET 功能需要检查 Logic App 配置。</small></p>`;
+                list.innerHTML = `<p class="empty">Created ${journalIds.length} journal(s), but unable to load them.<br><small>You can use the create function to add new journals. GET function needs Logic App configuration check.</small></p>`;
                 return;
             }
             
@@ -300,15 +300,15 @@
             });
             
             list.innerHTML = journals.map(journal => {
-                const date = new Date(journal.Timestamp || journal.RowKey).toLocaleString('zh-CN');
+                const date = new Date(journal.Timestamp || journal.RowKey).toLocaleString('en-US');
                 return `
                     <div class="journal-card">
                         <img src="${journal.ImageUrl || ''}" alt="${escapeHtml(journal.Title)}" onerror="this.style.display='none'">
                         <h3>${escapeHtml(journal.Title)}</h3>
                         <p>${escapeHtml(journal.Text)}</p>
                         <p><small>${date}</small></p>
-                        <button class="btn-small btn-edit" onclick="editJournal('${journal.RowKey}')">编辑</button>
-                        <button class="btn-small btn-delete" onclick="deleteJournal('${journal.RowKey}')">删除</button>
+                        <button class="btn-small btn-edit" onclick="editJournal('${journal.RowKey}')">Edit</button>
+                        <button class="btn-small btn-delete" onclick="deleteJournal('${journal.RowKey}')">Delete</button>
                     </div>
                 `;
             }).join('');
@@ -339,12 +339,12 @@
             
             // 图片现在是可选的
             if (!title || !text) {
-                alert('请填写标题和内容');
+                alert('Please fill in title and content');
                 return;
             }
             
             submitBtn.disabled = true;
-            submitBtn.textContent = '创建中...';
+            submitBtn.textContent = 'Creating...';
             
             try {
                 // 暂时不使用实际图片，使用占位符
@@ -362,18 +362,18 @@
                         journalIds.push(journalId);
                         localStorage.setItem('journalIds', JSON.stringify(journalIds));
                     }
-                    alert('创建成功！');
+                    alert('Journal created successfully!');
                     document.getElementById('journalForm').reset();
                     loadJournals();
                 } else {
                     const error = await res.text();
-                    alert('创建失败: ' + error);
+                    alert('Create failed: ' + error);
                 }
             } catch (error) {
-                alert('错误: ' + error.message);
+                alert('Error: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '创建日记';
+                submitBtn.textContent = 'Create Journal';
             }
         });
         
@@ -387,15 +387,15 @@
                 });
                 
                 if (!res.ok) {
-                    alert('获取日记失败');
+                    alert('Failed to get journal');
                     return;
                 }
                 
                 const journal = await res.json();
                 showEditModal(journal);
             } catch (error) {
-                console.error('获取日记错误:', error);
-                alert('获取日记失败: ' + error.message);
+                console.error('Error getting journal:', error);
+                alert('Failed to get journal: ' + error.message);
             }
         }
         
@@ -407,26 +407,26 @@
             modal.innerHTML = `
                 <div class="modal-content">
                     <span class="close-modal" onclick="closeEditModal()">&times;</span>
-                    <h2>编辑日记</h2>
+                    <h2>Edit Journal</h2>
                     <form id="editForm">
                         <div class="form-group">
-                            <label for="editTitle">标题</label>
+                            <label for="editTitle">Title</label>
                             <input type="text" id="editTitle" required value="${escapeHtml(journal.Title)}">
                         </div>
                         <div class="form-group">
-                            <label for="editText">内容</label>
+                            <label for="editText">Content</label>
                             <textarea id="editText" required>${escapeHtml(journal.Text)}</textarea>
                         </div>
                         <div class="form-group">
-                            <label for="editImage">图片（可选）</label>
+                            <label for="editImage">Image (Optional)</label>
                             <input type="file" id="editImage" accept="image/*">
                             <div id="editImagePreview" style="margin-top: 10px;">
                                 ${journal.ImageUrl ? `<img src="${journal.ImageUrl}" style="max-width: 200px; height: auto;">` : ''}
                             </div>
                         </div>
                         <input type="hidden" id="editJournalId" value="${journal.RowKey}">
-                        <button type="submit">保存更改</button>
-                        <button type="button" onclick="closeEditModal()" style="margin-left: 10px;">取消</button>
+                        <button type="submit">Save Changes</button>
+                        <button type="button" onclick="closeEditModal()" style="margin-left: 10px;">Cancel</button>
                     </form>
                 </div>
             `;
@@ -475,7 +475,7 @@
             const submitBtn = e.target.querySelector('button[type="submit"]');
             
             submitBtn.disabled = true;
-            submitBtn.textContent = '保存中...';
+            submitBtn.textContent = 'Saving...';
             
             try {
                 // 暂时不使用实际图片，使用占位符（或保留原有图片URL）
@@ -496,25 +496,25 @@
                 });
                 
                 if (res.ok) {
-                    alert('更新成功！');
+                    alert('Journal updated successfully!');
                     closeEditModal();
                     loadJournals();
                 } else {
                     const error = await res.text();
-                    alert('更新失败: ' + error);
+                    alert('Update failed: ' + error);
                 }
             } catch (error) {
-                console.error('更新错误:', error);
-                alert('更新失败: ' + error.message);
+                console.error('Update error:', error);
+                alert('Update failed: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '保存更改';
+                submitBtn.textContent = 'Save Changes';
             }
         }
         
         // 删除日记
         async function deleteJournal(id) {
-            if (!confirm('确定要删除这篇日记吗？')) return;
+            if (!confirm('Are you sure you want to delete this journal?')) return;
             
             try {
                 // 清理 journalId：移除换行符和其他特殊字符
@@ -532,16 +532,16 @@
                     // 从本地存储中移除journalId
                     journalIds = journalIds.filter(jId => jId !== id);
                     localStorage.setItem('journalIds', JSON.stringify(journalIds));
-                    alert('删除成功！');
+                    alert('Journal deleted successfully!');
                     loadJournals();
                 } else {
                     const errorText = await res.text();
                     console.error('DELETE failed:', res.status, errorText);
-                    alert('删除失败: ' + res.status + ' ' + res.statusText);
+                    alert('Delete failed: ' + res.status + ' ' + res.statusText);
                 }
             } catch (error) {
                 console.error('DELETE error:', error);
-                alert('删除失败: ' + error.message);
+                alert('Delete failed: ' + error.message);
             }
         }
         
