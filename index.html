@@ -304,8 +304,11 @@
             if (!confirm('确定要删除这篇日记吗？')) return;
             
             try {
-                const res = await fetch(DELETE_URL + '&journalId=' + encodeURIComponent(id), {
-                    method: 'DELETE'
+                // Logic App 的 HTTP 触发器需要使用 POST 请求，参数在请求体中
+                const res = await fetch(DELETE_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({journalId: id})
                 });
                 
                 if (res.ok) {
