@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {},
+  "triggers": {
+    "When_a_HTTP_request_is_received": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "journalId": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "Compose_log_message": {
+      "type": "Compose",
+      "inputs": {
+        "journalId": "@triggerBody()?['journalId']",
+        "title": "@triggerBody()?['title']",
+        "timestamp": "@utcNow()",
+        "message": "新日记已创建"
+      }
+    },
+    "Send_to_Application_Insights": {
+      "type": "Http",
+      "inputs": {
+        "method": "POST",
+        "uri": "https://api.applicationinsights.io/v1/apps/YOUR_APP_ID/events",
+        "headers": {
+          "X-Api-Key": "YOUR_API_KEY"
+        },
+        "body": {
+          "name": "JournalCreated",
+          "properties": "@outputs('Compose_log_message')"
+        }
+      }
+    },
+    "Response": {
+      "type": "Response",
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "status": "logged"
+        }
+      }
+    }
+  },
+  "outputs": {}
+}
+

@@ -1,0 +1,21 @@
+{
+  "name": "travel-journal-functions",
+  "version": "1.0.0",
+  "description": "Azure Functions for Travel Journal Platform",
+  "main": "index.js",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.2.2",
+    "@azure/storage-blob": "^12.17.0",
+    "@azure/storage-queue": "^12.15.0",
+    "@azure/applicationinsights": "^0.1.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.0.5455"
+  }
+}
+
