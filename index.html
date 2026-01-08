@@ -166,8 +166,8 @@
                 <textarea id="text" required placeholder="描述您的旅行经历..."></textarea>
             </div>
             <div class="form-group">
-                <label for="image">图片</label>
-                <input type="file" id="image" accept="image/*" required>
+                <label for="image">图片（可选）</label>
+                <input type="file" id="image" accept="image/*">
             </div>
             <button type="submit">创建日记</button>
         </form>
@@ -234,19 +234,11 @@
             return div.innerHTML;
         }
         
-        // 简化方案：图片上传（由于没有Function App，使用base64直接存储或使用外部图片URL）
+        // 简化方案：图片上传（暂时不存储图片，使用占位符）
         async function uploadImage(file) {
-            // 方案1：直接使用base64（简单但不推荐，数据会很大）
-            const base64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-            return base64; // 直接返回base64，Logic App可以存储
-            
-            // 方案2：如果不想上传图片，可以使用占位图片
-            // return 'https://via.placeholder.com/400x300?text=Travel+Image';
+            // 暂时不使用图片，返回占位符 URL
+            // 等 Logic App 支持 Blob Storage 上传后再启用真实图片
+            return 'https://via.placeholder.com/400x300?text=No+Image';
         }
         
         // 创建日记
@@ -258,11 +250,18 @@
             const imageFile = document.getElementById('image').files[0];
             const submitBtn = this.querySelector('button[type="submit"]');
             
+            // 图片现在是可选的
+            if (!title || !text) {
+                alert('请填写标题和内容');
+                return;
+            }
+            
             submitBtn.disabled = true;
             submitBtn.textContent = '创建中...';
             
             try {
-                const imageUrl = await uploadImage(imageFile);
+                // 暂时不使用实际图片，使用占位符
+                const imageUrl = imageFile ? await uploadImage(imageFile) : 'https://via.placeholder.com/400x300?text=No+Image';
                 const res = await fetch(CREATE_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
